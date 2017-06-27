@@ -1,23 +1,24 @@
 package battleship
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
 
-func Play(p1 *Player, p2 *Player, minutTime int64) {
+func Play(p1 *Player, p2 *Player, input1 []CellPosition, input2 []CellPosition, minutTime int64) (err error) {
 	playing := p1
 	nonPlaying := p2
 
 	// set the timer
-	timer := time.NewTimer(time.Minute * time.Duration(minutTime))
+	timer := time.NewTimer(time.Second * time.Duration(minutTime))
 
 	missileLocationChan := make(chan CellPosition)
 	playing.chanInput = make(chan bool)
 	nonPlaying.chanInput = make(chan bool)
 
-	go playing.Play(missileLocationChan)
-	go nonPlaying.Play(missileLocationChan)
+	go playing.Play(missileLocationChan, input1)
+	go nonPlaying.Play(missileLocationChan, input2)
 
 	// inform player to hit the target
 	playing.chanInput <- true
@@ -27,7 +28,7 @@ func Play(p1 *Player, p2 *Player, minutTime int64) {
 			// fmt.Println(nonPlaying)
 
 			missileResult := nonPlaying.HitTarget(cellPosition)
-			fmt.Print(playing.Name, " fires a missile with target ", cellPosition.Y, cellPosition.X, " which got ", missileResult)
+			fmt.Printf("%s fires a missile with target %c%d which got %s \n", playing.Name, convertNumberToChar(cellPosition.Y), cellPosition.X, missileResult)
 
 			if missileResult == HIT {
 				if nonPlaying.IsAllShunk() {
@@ -47,6 +48,7 @@ func Play(p1 *Player, p2 *Player, minutTime int64) {
 			// listen the timer
 		case <-timer.C:
 			fmt.Println("Oh! Time out, Both player has played nice game. Thank you")
+			err = errors.New("Time out Error")
 			return
 
 		}

@@ -1,6 +1,7 @@
 package battleship
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -9,6 +10,7 @@ type Player struct {
 	Ships       []Ship
 	Name        string
 	chanInput   chan bool
+	testData    []CellPosition
 }
 
 func (p Player) HitTarget(position CellPosition) (result MissileStatus) {
@@ -125,20 +127,38 @@ func (p *Player) AddBattleBoard(battleArea BattleArea) {
 	}
 }
 
-func (p *Player) Play(missileLocationChan chan CellPosition) {
+func (p *Player) Play(missileLocationChan chan CellPosition, input []CellPosition) (err error) {
+	index := 0
+
 	for {
 		select {
 		case <-p.chanInput:
-			cellPosition := CellPosition{}
-			fmt.Print("\n Player ", p.Name, " is Playing \n")
+			var cellPosition CellPosition
 
-			message := "A <=  Y coordinate of Target Ship <= N’ \n"
-			//var inputY string
-			cellPosition.Y, _ = GetYCordFromInputAsAtoZ(message)
+			if input != nil && len(input) >= index {
+				//fmt.Println("index : ", index)
+				if index < len(input) {
+					cellPosition = input[index]
+				} else {
+					fmt.Printf("%s does not have data to play \n", p.Name)
+					err = errors.New("Insufficient input data")
+					return
+				}
+				index++
 
-			message = "1 <= X coordinate of Target ship <= M’  \n"
-			//var inputX string
-			cellPosition.X, _ = GetXCordFromInputAs0to9(message)
+			} else {
+
+				cellPosition = CellPosition{}
+				fmt.Print("\n Player ", p.Name, " is Playing \n")
+
+				message := "A <=  Y coordinate of Target Ship <= N’ \n"
+				//var inputY string
+				cellPosition.Y, _ = GetYCordFromInputAsAtoZ(message)
+
+				message = "1 <= X coordinate of Target ship <= M’  \n"
+				//var inputX string
+				cellPosition.X, _ = GetXCordFromInputAs0to9(message)
+			}
 
 			missileLocationChan <- cellPosition
 		}
